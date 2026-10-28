@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevOps Lab</title>
+</head>
+<body>
+  <h1>DevOps Troubleshooting Lab</h1>
+  <p id="status">Checking API...</p>
+
+  <form id="message-form">
+    <input id="content" placeholder="Enter a message" required>
+    <button type="submit">Save message</button>
+  </form>
+
+  <h2>Saved messages</h2>
+  <ul id="messages"></ul>
+
+  <script>
+    const statusElement = document.querySelector("#status");
+    const messagesElement = document.querySelector("#messages");
+    const form = document.querySelector("#message-form");
+
+    async function loadMessages() {
+      try {
+        const response = await fetch("/api/messages");
+
+        if (!response.ok) {
+          throw new Error(`API returned HTTP ${response.status}`);
+        }
+
+        const messages = await response.json();
+        messagesElement.replaceChildren();
+
+        for (const message of messages) {
+          const item = document.createElement("li");
+          item.textContent =
+            `${message.content} (${message.created_at})`;
+          messagesElement.appendChild(item);
+        }
+
+        statusElement.textContent = "API connected";
+      } catch (error) {
+        statusElement.textContent = `Request failed: ${error.message}`;
+      }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const input = document.querySelector("#content");
+
+      try {
+        const response = await fetch("/api/messages", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({content: input.value})
+        });
+
+        if (!response.ok) {
+          throw new Error(`API returned HTTP ${response.status}`);
+        }
+
+        input.value = "";
+        await loadMessages();
+      } catch (error) {
+        statusElement.textContent = `Save failed: ${error.message}`;
+      }
+    });
+
+    loadMessages();
+  </script>
+</body>
+</html>
